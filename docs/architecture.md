@@ -1,4 +1,17 @@
-# USER PROMPT
+#Architecture Decisions/Strategy
+
+Data Ingestion Strategy
+
+Primary source:
+Real NFL data fetched via Python.
+
+Fallback:
+Cached CSV datasets stored locally.
+
+Purpose:
+Ensure reproducible demos and protect against API failures.
+
+## USER PROMPT
 
 ## PLANNER
 - Task Classification
