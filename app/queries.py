@@ -102,6 +102,66 @@ def compare_players(player_a, player_b):
         "reason": reason
     }
 
+def get_team_recent_games(team_code, limit=5):
+    """Return a team's most recent game summaries."""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT
+            season,
+            week,
+            team,
+            opponent_team,
+            SUM(rushing_yards) AS total_rushing_yards,
+            SUM(receiving_yards) AS total_receiving_yards,
+            SUM(rushing_tds) AS total_rushing_tds,
+            SUM(receiving_tds) AS total_receiving_tds,
+            SUM(fantasy_points) AS total_fantasy_points
+        FROM game_logs
+        WHERE team = ?
+        GROUP BY season, week, team, opponent_team
+        ORDER BY season DESC, week DESC
+        LIMIT ?
+    """, (team_code, limit))
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    return rows
+
+def get_team_average(team_code, limit=5):
+    """Return a team's average recent performance."""
+    recent_games = get_team_recent_games(team_code, limit)
+
+    if not recent_games:
+        return None
+
+    total_games = len(recent_games)
+
+    total_rushing_yards = 0
+    total_receiving_yards = 0
+    total_rushing_tds = 0
+    total_receiving_tds = 0
+    total_fantasy_points = 0
+
+    for game in recent_games:
+        total_rushing_yards += game[4]
+        total_receiving_yards += game[5]
+        total_rushing_tds += game[6]
+        total_receiving_tds += game[7]
+        total_fantasy_points += game[8]
+
+    return {
+        "team": team_code,
+        "games_used": total_games,
+        "avg_rushing_yards": total_rushing_yards / total_games,
+        "avg_receiving_yards": total_receiving_yards / total_games,
+        "avg_rushing_tds": total_rushing_tds / total_games,
+        "avg_receiving_tds": total_receiving_tds / total_games,
+        "avg_fantasy_points": total_fantasy_points / total_games,
+    }
+
 if __name__ == "__main__":
-    comparison = compare_players("Aaron Rodgers", "Josh Allen")
-    print(comparison)
+    team_stats = get_team_average("BAL", limit=5)
+    print(team_stats)
